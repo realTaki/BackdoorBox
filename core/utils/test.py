@@ -5,6 +5,7 @@ import time
 
 import numpy as np
 import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision.datasets import CIFAR10, MNIST, DatasetFolder
 
@@ -60,26 +61,51 @@ def test(model, dataset, schedule):
     if 'test_model' in schedule:
         model.load_state_dict(torch.load(schedule['test_model']), strict=False)
 
+    work_dir = osp.join(schedule['save_dir'], schedule['experiment_name'] + '_' + time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()))
+    os.makedirs(work_dir, exist_ok=True)
+    log = Log(osp.join(work_dir, 'log.txt'))
+
     # Use GPU
     if 'device' in schedule and schedule['device'] == 'GPU':
-        if 'CUDA_VISIBLE_DEVICES' in schedule:
-            os.environ['CUDA_VISIBLE_DEVICES'] = schedule['CUDA_VISIBLE_DEVICES']
+        log('==========Use GPUs to train==========\n')
 
-        assert torch.cuda.device_count() > 0, 'This machine has no cuda devices!'
-        assert schedule['GPU_num'] >0, 'GPU_num should be a positive integer'
-        print(f"This machine has {torch.cuda.device_count()} cuda devices, and use {schedule['GPU_num']} of them to train.")
-
-        if schedule['GPU_num'] == 1:
-            device = torch.device("cuda:0")
+        CUDA_VISIBLE_DEVICES = ''
+        if 'CUDA_VISIBLE_DEVICES' in os.environ:
+            CUDA_VISIBLE_DEVICES = os.environ['CUDA_VISIBLE_DEVICES']
         else:
-            gpus = list(range(schedule['GPU_num']))
-            model = nn.DataParallel(model.cuda(), device_ids=gpus, output_device=gpus[0])
-            # TODO: DDP training
-            pass
+            CUDA_VISIBLE_DEVICES = ','.join([str(i) for i in range(torch.cuda.device_count())])
+        log(f'CUDA_VISIBLE_DEVICES={CUDA_VISIBLE_DEVICES}\n')
+
+        if CUDA_VISIBLE_DEVICES == '':
+            raise ValueError(f'This machine has no visible cuda devices!')
+
+        CUDA_SELECTED_DEVICES = ''
+        if 'CUDA_SELECTED_DEVICES' in schedule:
+            CUDA_SELECTED_DEVICES = schedule['CUDA_SELECTED_DEVICES']
+        else:
+            CUDA_SELECTED_DEVICES = CUDA_VISIBLE_DEVICES
+        log(f'CUDA_SELECTED_DEVICES={CUDA_SELECTED_DEVICES}\n')
+
+        CUDA_VISIBLE_DEVICES_LIST = sorted(CUDA_VISIBLE_DEVICES.split(','))
+        CUDA_SELECTED_DEVICES_LIST = sorted(CUDA_SELECTED_DEVICES.split(','))
+
+        CUDA_VISIBLE_DEVICES_SET = set(CUDA_VISIBLE_DEVICES_LIST)
+        CUDA_SELECTED_DEVICES_SET = set(CUDA_SELECTED_DEVICES_LIST)
+        if not (CUDA_SELECTED_DEVICES_SET <= CUDA_VISIBLE_DEVICES_SET):
+            raise ValueError(f'CUDA_VISIBLE_DEVICES should be a subset of CUDA_VISIBLE_DEVICES!')
+
+        GPU_num = len(CUDA_SELECTED_DEVICES_SET)
+        device_ids = [CUDA_VISIBLE_DEVICES_LIST.index(CUDA_SELECTED_DEVICE) for CUDA_SELECTED_DEVICE in CUDA_SELECTED_DEVICES_LIST]
+        device = torch.device(f'cuda:{device_ids[0]}')
+        model = model.to(device)
+
+        if GPU_num > 1:
+            model = nn.DataParallel(model, device_ids=device_ids, output_device=device_ids[0])
     # Use CPU
     else:
         device = torch.device("cpu")
-
+    
+    # device = torch.device("cuda:0")
     if schedule['metric'] == 'ASR_NoTarget':
         if isinstance(dataset, CIFAR10):
             data = []
@@ -110,9 +136,6 @@ def test(model, dataset, schedule):
         else:
             raise NotImplementedError
 
-    work_dir = osp.join(schedule['save_dir'], schedule['experiment_name'] + '_' + time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()))
-    os.makedirs(work_dir, exist_ok=True)
-    log = Log(osp.join(work_dir, 'log.txt'))
 
     last_time = time.time()
     predict_digits, labels = _test(model, dataset, device, schedule['batch_size'], schedule['num_workers'])
@@ -122,5 +145,5 @@ def test(model, dataset, schedule):
     top5_correct = int(round(prec5.item() / 100.0 * total_num))
     msg = f"==========Test result on {schedule['metric']}==========\n" + \
             time.strftime("[%Y-%m-%d_%H:%M:%S] ", time.localtime()) + \
-            f"Top-1 correct / Total: {top1_correct}/{total_num}, Top-1 accuracy: {top1_correct/total_num}, Top-5 correct / Total: {top5_correct}/{total_num}, Top-5 accuracy: {top5_correct/total_num} time: {time.time()-last_time}\n"
+            f"Top-1 correct / Total: {top1_correct}/{total_num}, Top-1 accuracy: {top1_correct/total_num}, Top-5 correct / Total: {top5_correct}/{total_num}, Top-5 accuracy: {top5_correct/total_num}, time: {time.time()-last_time}\n"
     log(msg)

@@ -19,7 +19,8 @@ import core
 global_seed = 666
 deterministic = True
 torch.manual_seed(global_seed)
-CUDA_VISIBLE_DEVICES = '1'
+# CUDA_SELECTED_DEVICES = '0,3'
+CUDA_SELECTED_DEVICES = '0'
 datasets_root_dir = '../datasets'
 
 
@@ -57,12 +58,11 @@ badnets = core.BadNets(
 # Train Attacked Model (schedule is set by yamengxi)
 schedule = {
     'device': 'GPU',
-    'CUDA_VISIBLE_DEVICES': CUDA_VISIBLE_DEVICES,
-    'GPU_num': 1,
+    'CUDA_SELECTED_DEVICES': CUDA_SELECTED_DEVICES,
 
     'benign_training': False,
-    'batch_size': 128,
-    'num_workers': 2,
+    'batch_size': 1024,
+    'num_workers': 4,
 
     'lr': 0.1,
     'momentum': 0.9,
@@ -80,6 +80,7 @@ schedule = {
     'experiment_name': 'BaselineMNISTNetwork_MNIST_BadNets'
 }
 badnets.train(schedule)
+badnets.test(schedule)
 
 
 # ========== ResNet-18_CIFAR-10_BadNets ==========
@@ -117,12 +118,11 @@ badnets = core.BadNets(
 # Train Attacked Model (schedule is the same as https://github.com/THUYimingLi/Open-sourced_Dataset_Protection/blob/main/CIFAR/train_watermarked.py)
 schedule = {
     'device': 'GPU',
-    'CUDA_VISIBLE_DEVICES': CUDA_VISIBLE_DEVICES,
-    'GPU_num': 1,
+    'CUDA_SELECTED_DEVICES': CUDA_SELECTED_DEVICES,
 
     'benign_training': False,
-    'batch_size': 128,
-    'num_workers': 2,
+    'batch_size': 1024,
+    'num_workers': 4,
 
     'lr': 0.1,
     'momentum': 0.9,
@@ -140,6 +140,7 @@ schedule = {
     'experiment_name': 'ResNet-18_CIFAR-10_BadNets'
 }
 badnets.train(schedule)
+badnets.test(schedule)
 
 
 # ========== ResNet-18_GTSRB_BadNets ==========
@@ -193,12 +194,11 @@ badnets = core.BadNets(
 # Train Attacked Model (schedule is the same as https://github.com/THUYimingLi/Open-sourced_Dataset_Protection/blob/main/GTSRB/train_watermarked.py)
 schedule = {
     'device': 'GPU',
-    'CUDA_VISIBLE_DEVICES': CUDA_VISIBLE_DEVICES,
-    'GPU_num': 1,
+    'CUDA_SELECTED_DEVICES': CUDA_SELECTED_DEVICES,
 
     'benign_training': False,
-    'batch_size': 128,
-    'num_workers': 2,
+    'batch_size': 1024,
+    'num_workers': 4,
 
     'lr': 0.01,
     'momentum': 0.9,
@@ -216,3 +216,4 @@ schedule = {
     'experiment_name': 'ResNet-18_GTSRB_BadNets'
 }
 badnets.train(schedule)
+badnets.test(schedule)

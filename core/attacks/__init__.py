@@ -9,7 +9,12 @@ from .IAD import IAD
 from .LIRA import LIRA
 from .PhysicalBA import PhysicalBA
 from .ISSBA import ISSBA
+from .TUAP import TUAP
+from .SleeperAgent import SleeperAgent
+from .BATT import BATT
+from .AdaptivePatch import AdaptivePatch
+from .BAAT import BAAT
 
 __all__ = [
-    'BadNets', 'Blended','Refool', 'WaNet', 'LabelConsistent', 'Blind', 'IAD', 'LIRA', 'PhysicalBA', 'ISSBA'
+    'BadNets', 'Blended','Refool', 'WaNet', 'LabelConsistent', 'Blind', 'IAD', 'LIRA', 'PhysicalBA', 'ISSBA','TUAP', 'SleeperAgent','BATT', 'AdaptivePatch', 'BAAT'
 ]

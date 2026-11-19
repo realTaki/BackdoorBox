@@ -46,7 +46,7 @@ def test(model_name, dataset_name, attack_name, defense_name, model, model_path,
             'batch_size': batch_size,
             'num_workers': num_workers,
         }
-        res = defense.predict(model, data.float() // 255, schedule, size_map=size_map, pad=pad)
+        res = defense.predict(model, data.float() / 255, schedule, size_map=size_map, pad=pad)
 
     schedule = {
         'device': 'GPU',
